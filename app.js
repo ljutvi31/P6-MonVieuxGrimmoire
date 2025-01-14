@@ -12,8 +12,8 @@ const booksRoutes = require("./routes/books");
 const app = express();
 
 //Connexion sur MongoDB
-mongoose.set("strictQuery", true); //Activation de strict query
-mongoose.connect(process.env.MONGODBD_URI)
+mongoose.set("strictQuery", true);
+mongoose.connect(process.env.MONGODB_URI)   // MONGODB_URI comme dans votre .env
 .then(() => console.log("Connecté à MongoDB!"))
 .catch((error) => console.error("Connexion à MongoDB échouée!", error));
 
