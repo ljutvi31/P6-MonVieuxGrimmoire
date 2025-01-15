@@ -1,15 +1,25 @@
+// Importation de la bibliothèque jsonwebtoken pour gérer les tokens
 const jwt = require('jsonwebtoken');
 
+// Middleware d'authentification
 module.exports = (req, res, next) => {
-    try {
-        const token = req.headers.authorization.split(' ')[1];  // Récupère le token du header
-        const decodedToken = jwt.verify(token, 'RANDOM_TOKEN_SECRET');  // Décode le token
-        const userId = decodedToken.userId;  // Extrait l'ID utilisateur
-        req.auth = {  // Ajoute l'ID à l'objet requête
-            userId: userId
-        };
-        next();  // Passe au middleware suivant
-    } catch(error) {
-        res.status(401).json({ error });  // Erreur si token invalide
+  try {
+    // Vérification de la présence du header Authorization
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: "Autorisation du HEADERS absent!" });
     }
+
+    // Récupération et vérification du token
+    const token = authHeader.split(' ')[1];
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET); // Utilisation d'une clé secrète sécurisée
+
+    // Ajout de l'ID utilisateur à l'objet req
+    req.auth = {
+      userId: decodedToken.userId,
+    };
+    next(); // Poursuite de la chaîne de middleware
+  } catch (error) {
+    res.status(401).json({ message: "Token invalide ou expiré !", error });
+  }
 };
