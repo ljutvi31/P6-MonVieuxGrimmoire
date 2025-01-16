@@ -45,6 +45,7 @@ const upload = multer({
     },
     fileFilter: (req, file, callback) => {
         if (!MIME_TYPES[file.mimetype]) {
+            console.warn("Type MIME non supporté :", file.mimetype); // Log
             return callback(new Error("Format de fichier non supporté. Utilisez JPG, PNG ou WebP."));
         }
         callback(null, true);
@@ -56,10 +57,7 @@ const processImage = (req, res, next) => {
     if (!req.file) return next();
 
     const filePath = req.file.path;
-    const optimizedFilePath = path.join(
-        "images",
-        "optimized_" + req.file.filename
-    );
+    const optimizedFilePath = path.resolve("images", "optimized_" + req.file.filename);
 
     sharp(filePath)
         .resize(800, 800, { fit: "inside" }) // Redimensionne tout en gardant les proportions
@@ -74,8 +72,8 @@ const processImage = (req, res, next) => {
             });
         })
         .catch(error => {
-            // En cas d'erreur, nettoie les fichiers
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            console.error("Erreur lors du traitement de l'image :", error.message); // Log précis
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Nettoyage
             if (fs.existsSync(optimizedFilePath)) fs.unlinkSync(optimizedFilePath);
             next(error);
         });
