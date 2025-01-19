@@ -105,16 +105,16 @@ exports.getBestRating = (req, res, next) => {
         .catch(error => res.status(400).json({ error }));
 };
 
-// POST : Noter un livre
+// POST pour noter un livre
 exports.rateBook = (req, res, next) => {
-    // Vérification de la note (entre 0 et 5)
+    // Vérification de la note entre 0 et 5
     if (req.body.rating < 0 || req.body.rating > 5) {
         return res.status(400).json({ message: "La note doit être comprise entre 0 et 5" });
     }
 
     Book.findOne({ _id: req.params.id })
         .then(book => {
-            // Vérifier si l'utilisateur a déjà noté ce livre
+            // Vérifier si l'user a déjà noté ce livre
             if (book.ratings.find(rating => rating.userId === req.auth.userId)) {
                 return res.status(400).json({ message: "Vous avez déjà noté ce livre" });
             }
