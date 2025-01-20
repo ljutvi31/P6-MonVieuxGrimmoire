@@ -20,7 +20,19 @@ mongoose.connect(process.env.MONGODB_URI)   // MONGODB_URI comme dans votre .env
 //Parse le JSON
 app.use(express.json());
 //Middleware Helmet pour sécuriser les en-tête HTTP
-app.use(helmet());
+app.use(
+    helmet({
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      contentSecurityPolicy: {
+        directives: {
+          "default-src": ["'self'", "http://localhost:3000", "http://localhost:4000"],
+          "img-src": ["'self'", "data:", "blob:", "http://localhost:3000", "http://localhost:4000"],
+          "connect-src": ["'self'", "http://localhost:3000", "http://localhost:4000"],
+        },
+      },
+    })
+  );
 
 //Middleware pour gérer le CroosOriginRessourcesSharing 
 app.use((req, res, next) => {

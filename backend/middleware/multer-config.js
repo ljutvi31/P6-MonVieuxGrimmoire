@@ -1,14 +1,14 @@
-const multer = require("multer");
-const sharp = require("sharp");
-const fs = require("fs");
-const path = require("path");
+const multer = require('multer');
+const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs');
 
 // Types MIME supportés
 const MIME_TYPES = {
-    "image/jpg": "jpg",
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
+    'image/jpg': 'jpg',
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp'
 };
 
 // Création du dossier images s'il n'existe pas
@@ -24,59 +24,66 @@ createImagesFolder();
 // Configuration Multer
 const storage = multer.diskStorage({
     destination: (req, file, callback) => {
-        callback(null, "images");
+        callback(null, 'images');
     },
     filename: (req, file, callback) => {
-        const name = file.originalname
-            .toLowerCase()
-            .split(" ")
-            .join("_")
-            .replace(/[^a-z0-9._-]/g, "");
+        const name = file.originalname.split(' ').join('_').split('.')[0];
         const extension = MIME_TYPES[file.mimetype];
-        callback(null, name + "_" + Date.now() + "." + extension);
-    },
-});
+        callback(null, name + Date.now() + '.' + extension);
+    }
+}); 
 
 // Middleware Multer avec vérifications
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 2 * 1024 * 1024, // Limite à 2MB
+        fileSize: 4 * 1024 * 1024, // Limite à 4MB
     },
     fileFilter: (req, file, callback) => {
         if (!MIME_TYPES[file.mimetype]) {
-            console.warn("Type MIME non supporté :", file.mimetype); // Log
             return callback(new Error("Format de fichier non supporté. Utilisez JPG, PNG ou WebP."));
         }
         callback(null, true);
-    },
-}).single("image");
+    }
+}).single('image');
 
 // Middleware Sharp pour optimiser l'image
 const processImage = (req, res, next) => {
     if (!req.file) return next();
 
     const filePath = req.file.path;
-    const optimizedFilePath = path.resolve("images", "optimized_" + req.file.filename);
+    const fileName = `resized_${req.file.filename}`;
+    const outputPath = path.join('images', fileName);
 
     sharp(filePath)
-        .resize(800, 800, { fit: "inside" }) // Redimensionne tout en gardant les proportions
-        .webp({ quality: 80 }) // Convertit en WebP pour une meilleure compression
-        .toFile(optimizedFilePath)
+        .resize({
+            width: 412,
+            height: 520,
+            fit: sharp.fit.cover,
+            position: sharp.strategy.entropy,
+            withoutEnlargement: true
+        })
+        .webp({ 
+            quality: 90,
+            effort: 6
+        })
+        .toFile(outputPath)
         .then(() => {
-            // Supprime l'image originale
             fs.unlink(filePath, () => {
-                req.file.path = optimizedFilePath;
-                req.file.filename = "optimized_" + req.file.filename;
+                req.file.filename = fileName;
+                req.file.path = outputPath;
                 next();
             });
         })
         .catch(error => {
-            console.error("Erreur lors du traitement de l'image :", error.message); // Log précis
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // Nettoyage
-            if (fs.existsSync(optimizedFilePath)) fs.unlinkSync(optimizedFilePath);
+            console.error("Erreur lors du traitement de l'image :", error);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
             next(error);
         });
 };
 
-module.exports = [upload, processImage];
+module.exports = {
+    upload: upload,
+    resizeImage: processImage
+};
