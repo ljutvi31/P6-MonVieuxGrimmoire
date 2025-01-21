@@ -20,8 +20,8 @@ exports.createBook = (req, res, next) => {
             ...bookObject,
             userId: req.auth.userId,
             imageUrl: `${req.protocol}://${req.get("host")}/images/${fileName}`,
-            averageRating: 0,
-            ratings: [],
+            ratings: bookObject.ratings || [], // Utilisez les ratings envoyés
+            averageRating: bookObject.averageRating || 0, // Utilisez l'averageRating envoyé
         });
         
         book.save()
